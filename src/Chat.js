@@ -6,7 +6,8 @@ import AttachFile from '@material-ui/icons/AttachFile';
 import MoreVert from '@material-ui/icons/MoreVert';
 import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon';
 import MicIcon from '@material-ui/icons/Mic';
-import { useParams} from "react-router";
+import { useParams } from "react-router";
+import { useStateValue } from './StateProvider';
 import db from './firebase';
 
 function Chat() {
@@ -14,11 +15,17 @@ function Chat() {
     const [input, setInput] = useState("");
     const { roomId } = useParams();
     const [roomName, setRoomName] = useState("");
+    const [messages, setMessages] = useState([]);
+    const [ { user }, dispatch] = useStateValue();
 
     useEffect(() => {
         if (roomId) {
             db.collection('rooms').doc(roomId).onSnapshot(snapchot => (
                 setRoomName(snapchot.data().name)
+            ))
+
+            db.collection('rooms').doc(roomId).collection("messages").orderBy('timestamp', 'asc').onSnapshot(snapchot => (
+                setMessages(snapchot.docs.map(doc => doc.data()))
             ))
         }
     }, [roomId])
@@ -29,7 +36,12 @@ function Chat() {
 
     const sendMessage = (e) => {
         e.preventDefault();
-        console.log("you typed :::", input);
+        
+        db.collection('rooms').doc(roomId).collection('messages').add({
+            message: input,
+            user: user.displayName,
+            timestamp: new Date()
+        })
 
         setInput('');
     }
@@ -58,13 +70,16 @@ function Chat() {
             </div>
 
             <div className="chat__body">
-                <p className={`chat__message ${true && 'chat__receiver'}`}>
-                    <span className="chat__name">Sonny</span>
-                    Hey guys
-                    <span className="chat__timestamp">14:30</span>
-                </p>
-                <p className="chat__message">Hey guys whtasodaoskdsad</p>
-                <p className="chat__message">Hey guys sadasdsad</p>
+                {messages.map(message => (
+                    <p className={`chat__message ${message.name === user.displayName && 'chat__receiver'}`}>
+                        <span className="chat__name">{message.name}</span>
+                        {message.message}
+                    <span className="chat__timestamp">
+                        {new Date(message.timestamp).toString()}
+                    </span>
+                    </p>
+                ))}
+
             </div>
 
             <div className="chat__footer">
