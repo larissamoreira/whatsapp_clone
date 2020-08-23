@@ -55,3 +55,8 @@
     background-color: white;
     overflow: scroll;
 }
+
+a {
+    text-decoration: none !important;
+    color: black;
+}

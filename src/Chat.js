@@ -9,6 +9,7 @@ import MicIcon from '@material-ui/icons/Mic';
 import { useParams } from "react-router";
 import { useStateValue } from './StateProvider';
 import db from './firebase';
+import firebase from 'firebase';
 
 function Chat() {
     const [seed, setSeed] = useState("");
@@ -16,7 +17,7 @@ function Chat() {
     const { roomId } = useParams();
     const [roomName, setRoomName] = useState("");
     const [messages, setMessages] = useState([]);
-    const [ { user }, dispatch] = useStateValue();
+    const [{ user }, dispatch] = useStateValue();
 
     useEffect(() => {
         if (roomId) {
@@ -36,11 +37,11 @@ function Chat() {
 
     const sendMessage = (e) => {
         e.preventDefault();
-        
+
         db.collection('rooms').doc(roomId).collection('messages').add({
             message: input,
             user: user.displayName,
-            timestamp: new Date()
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         })
 
         setInput('');
@@ -53,7 +54,7 @@ function Chat() {
 
                 <div className="chat__headerInfo">
                     <h3>{roomName}</h3>
-                    <p>Last seen at ...</p>
+                    <p>Last seen at {new Date(messages[messages.length - 1] && messages[messages.length - 1].timestamp.toDate()).toUTCString()}</p>
                 </div>
 
                 <div className="chat__headerRight">
@@ -71,12 +72,13 @@ function Chat() {
 
             <div className="chat__body">
                 {messages.map(message => (
-                    <p className={`chat__message ${message.name === user.displayName && 'chat__receiver'}`}>
-                        <span className="chat__name">{message.name}</span>
+
+                    <p className={`chat__message ${message.user === user.displayName && 'chat__receiver'}`}>
+                        <span className="chat__name">{message.user}</span>
                         {message.message}
-                    <span className="chat__timestamp">
-                        {new Date(message.timestamp).toString()}
-                    </span>
+                        <span className="chat__timestamp">
+                            {new Date(message.timestamp).toDateString()}
+                        </span>
                     </p>
                 ))}
 
